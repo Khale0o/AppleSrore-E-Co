@@ -1,30 +1,66 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:applestore/spikes/carousel_hero/carousel_hero_spike.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:applestore/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  Future<void> pumpSpike(WidgetTester tester) async {
+    await tester.pumpWidget(const CarouselHeroSpikeApp());
+    await tester.pumpAndSettle();
+  }
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('initially selects the first product', (tester) async {
+    await pumpSpike(tester);
+    expect(find.text('Aether One'), findsOneWidget);
   });
+
+  testWidgets('second indicator selects the second product and updates text', (
+    tester,
+  ) async {
+    await pumpSpike(tester);
+    await tester.tap(find.byKey(const Key('indicator_1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Aether One Air'), findsOneWidget);
+  });
+
+  testWidgets('selected product opens its details scene', (tester) async {
+    await pumpSpike(tester);
+    await tester.tap(find.byKey(const Key('product_aether_one')));
+    await tester.pumpAndSettle();
+    expect(find.text('Precision shaped around light.'), findsOneWidget);
+  });
+
+  testWidgets(
+    'details displays selected product and back returns to carousel selection',
+    (tester) async {
+      await pumpSpike(tester);
+      await tester.tap(find.byKey(const Key('indicator_1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('product_aether_one_air')));
+      await tester.pumpAndSettle();
+      expect(find.text('Aether One Air'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('details_back')));
+      await tester.pumpAndSettle();
+      expect(find.text('Aether One Air'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Reduced Motion changes state while navigation remains functional',
+    (tester) async {
+      await pumpSpike(tester);
+      await tester.tap(find.byKey(const Key('reduced_motion_toggle')));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<Switch>(find.byKey(const Key('reduced_motion_toggle')))
+            .value,
+        isTrue,
+      );
+      await tester.tap(find.byKey(const Key('indicator_1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('product_aether_one_air')));
+      await tester.pumpAndSettle();
+      expect(find.text('Aether One Air'), findsOneWidget);
+    },
+  );
 }
