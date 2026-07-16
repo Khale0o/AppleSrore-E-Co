@@ -12,6 +12,7 @@
 - Complete one task only. Inspect existing files before editing and do not start future tasks.
 - Do not rewrite working code without a clear reason; keep the project runnable.
 - Do not add dependencies without justification; prefer Flutter SDK capabilities over unnecessary packages.
+- Document the reason for every new dependency or major visual-direction change in the task report.
 - Use feature-first architecture without excessive abstraction.
 - Do not introduce Firebase or backend work before the premium vertical slice is approved.
 - Record important decisions under `docs/decisions/` and external asset sources in `ASSET_SOURCES.md`.
@@ -23,6 +24,13 @@
 3. Complete vertical slice
 4. Code quality
 5. Feature count
+
+## UI direction
+
+- Build a cinematic, product-focused shopping experience; avoid generic grid-first e-commerce layouts.
+- Avoid excessive cards, glassmorphism, blur, and decorative animation.
+- Prefer large product scenes, strong typography, generous spacing, and visually connected transitions.
+- The interface should feel like an interactive product film rather than standard UI screens.
 
 ## Validation
 
@@ -42,4 +50,3 @@
 
 - Create a concise task report after each task and a comprehensive handoff report at the end of each phase.
 - Document incomplete or deferred work explicitly.
-
