@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
-import 'package:applestore/spikes/carousel_hero/carousel_hero_spike.dart';
+import 'app/bootstrap.dart';
 
 void main() {
-  runApp(const CarouselHeroSpikeApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  bootstrap();
 }
