@@ -8,6 +8,7 @@ import '../../../app/theme/app_typography.dart';
 import '../../../core/accessibility/reduced_motion_controller.dart';
 import '../../home/presentation/home_products.dart';
 import '../../home/presentation/production_phone_render.dart';
+import '../../cart/presentation/cart_badge.dart';
 
 class ProductDetailsPlaceholderPage extends ConsumerWidget {
   const ProductDetailsPlaceholderPage({super.key, required this.productId});
@@ -37,11 +38,17 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    IconButton(
-                      key: const Key('details_back'),
-                      onPressed: () => context.pop(),
-                      color: Colors.white,
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                    Row(
+                      children: [
+                        IconButton(
+                          key: const Key('details_back'),
+                          onPressed: () => context.pop(),
+                          color: Colors.white,
+                          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                        ),
+                        const Spacer(),
+                        const CartBadge(),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Center(

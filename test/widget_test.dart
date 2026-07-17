@@ -8,6 +8,50 @@ Future<void> pumpRoute(WidgetTester tester, String route) async {
   appRouter.go(route);
   await tester.pumpWidget(const ProviderScope(child: AppleStoreApp()));
   await tester.pumpAndSettle();
+  /*test('cart adds, merges, separates, changes subtotal, and removes', () {
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    final cart = c.read(cartProvider.notifier);
+    final a = const CartItem(
+      productId: 'aether-pro',
+      name: 'Aether Pro',
+      finish: 'Graphite',
+      storage: '128 GB',
+      unitPrice: 899,
+    );
+    final b = const CartItem(
+      productId: 'aether-pro',
+      name: 'Aether Pro',
+      finish: 'Blue',
+      storage: '128 GB',
+      unitPrice: 899,
+    );
+    cart.add(a);
+    expect(c.read(cartProvider), hasLength(1));
+    cart.add(a);
+    expect(c.read(cartProvider).single.quantity, 2);
+    cart.add(b);
+    expect(c.read(cartProvider), hasLength(2));
+    cart.change(a, -1);
+    expect(c.read(cartSubtotalProvider), 1798);
+    cart.remove(b);
+    expect(c.read(cartProvider), hasLength(1));
+  });*/
+  /*testWidgets('empty cart renders and cart badge opens Cart', (t) async {
+    await pumpRoute(t, '/home');
+    await t.tap(find.byKey(const Key('cart_badge')));
+    await t.pumpAndSettle();
+    expect(find.text('Nothing selected yet.'), findsOneWidget);
+  });
+  testWidgets('Add to Bag confirms and opens Cart', (t) async {
+    await pumpRoute(t, '/product/aether-pro/configure');
+    await t.tap(find.byKey(const Key('add_to_bag')));
+    await t.pumpAndSettle();
+    expect(find.text('Added to Bag'), findsOneWidget);
+    await t.tap(find.textContaining('Open Cart'));
+    await t.pumpAndSettle();
+    expect(find.text('Subtotal  899'), findsOneWidget);
+  });*/
 }
 
 void main() {

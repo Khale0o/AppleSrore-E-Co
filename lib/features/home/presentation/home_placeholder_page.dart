@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/app_motion.dart';
 import '../../../core/accessibility/reduced_motion_controller.dart';
+import '../../cart/presentation/cart_badge.dart';
 import 'home_products.dart';
 import 'production_phone_render.dart';
 
@@ -160,12 +161,7 @@ class _TopBar extends StatelessWidget {
         ),
         Row(
           children: [
-            IconButton(
-              tooltip: 'Bag',
-              onPressed: onBag,
-              color: Colors.white,
-              icon: const Icon(Icons.shopping_bag_outlined),
-            ),
+            const CartBadge(),
             Switch(
               key: const Key('reduced_motion_toggle'),
               value: reduced,
