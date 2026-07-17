@@ -1,144 +1,140 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../app/design_system/app_scaffold.dart';
-import '../../../app/design_system/app_text_button.dart';
 import '../../../app/router/app_routes.dart';
-import '../../../app/theme/app_typography.dart';
-import '../../../core/accessibility/reduced_motion_controller.dart';
-import '../../home/presentation/home_products.dart';
-import '../../home/presentation/production_phone_render.dart';
 import '../../cart/presentation/cart_badge.dart';
+import '../../home/presentation/home_products.dart';
 
-class ProductDetailsPlaceholderPage extends ConsumerWidget {
+class ProductDetailsPlaceholderPage extends StatelessWidget {
   const ProductDetailsPlaceholderPage({super.key, required this.productId});
   final String productId;
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final product = productForIdOrNull(productId);
-    if (product == null) {
-      return _Fallback(onHome: () => context.goNamed(AppRoutes.home));
+  Widget build(BuildContext c) {
+    final p = productForIdOrNull(productId);
+    if (p == null) {
+      return const Scaffold(body: Center(child: Text('PRODUCT UNAVAILABLE')));
     }
-    final reduced = ref.watch(reducedMotionProvider);
-    return AppScaffold(
-      padding: false,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [product.start, product.end],
-          ),
-        ),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 96),
+    final related = homeProducts
+        .where((x) => x.category == p.category && x.id != p.id)
+        .take(3);
+    return Scaffold(
+      backgroundColor: p.start,
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(24),
+              sliver: SliverToBoxAdapter(
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => c.pop(),
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    ),
+                    const Spacer(),
+                    const CartBadge(),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(28),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          key: const Key('details_back'),
-                          onPressed: () => context.pop(),
-                          color: Colors.white,
-                          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                        ),
-                        const Spacer(),
-                        const CartBadge(),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
                     Center(
                       child: Hero(
-                        tag: product.heroTag,
+                        tag: p.heroTag,
                         child: SizedBox(
-                          width: 190,
-                          child: ProductionPhoneRender(product: product),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    Text(product.name, style: AppTypography.headline),
-                    const SizedBox(height: 8),
-                    Text(
-                      product.tagline,
-                      style: TextStyle(color: product.accent, fontSize: 17),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      '${product.finish} · ${product.price}',
-                      style: AppTypography.body,
-                    ),
-                    const SizedBox(height: 28),
-                    ...product.features.asMap().entries.map(
-                      (entry) => TweenAnimationBuilder<double>(
-                        tween: Tween(begin: reduced ? 1 : 0, end: 1),
-                        duration: Duration(
-                          milliseconds: reduced ? 100 : 180 + entry.key * 55,
-                        ),
-                        builder: (context, value, child) => Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset(0, reduced ? 0 : 12 * (1 - value)),
-                            child: child,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(
-                            '— ${entry.value}',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: .75),
-                              fontSize: 15,
-                            ),
+                          height: 260,
+                          child: Image.asset(
+                            p.assetPath,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  Icons.image_outlined,
+                                  color: Colors.white38,
+                                  size: 100,
+                                ),
                           ),
                         ),
                       ),
+                    ),
+                    Text(
+                      p.category.label.toUpperCase(),
+                      style: TextStyle(color: p.accent, letterSpacing: 2),
+                    ),
+                    Text(
+                      p.name,
+                      style: const TextStyle(color: Colors.white, fontSize: 38),
+                    ),
+                    Text(
+                      p.tagline,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 17,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(p.price, style: const TextStyle(color: Colors.white)),
+                    const SizedBox(height: 20),
+                    ...p.features.map(
+                      (f) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          '— $f',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      children: p.finishes
+                          .map((f) => Chip(label: Text(f)))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton(
+                      onPressed: () => c.pushNamed(
+                        AppRoutes.configure,
+                        pathParameters: {'productId': p.id},
+                      ),
+                      child: const Text('Configure'),
                     ),
                   ],
                 ),
               ),
-              Positioned(
-                left: 24,
-                right: 24,
-                bottom: 16,
-                child: AppTextButton(
-                  label: 'Configure',
-                  onPressed: () => context.pushNamed(
-                    AppRoutes.configure,
-                    pathParameters: {'productId': product.id},
-                  ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'More ${p.category.label}',
+                  style: const TextStyle(color: Colors.white, fontSize: 20),
                 ),
               ),
-            ],
-          ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 150,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: related
+                      .map(
+                        (x) => TextButton(
+                          onPressed: () => c.pushNamed(
+                            AppRoutes.product,
+                            pathParameters: {'productId': x.id},
+                          ),
+                          child: Text(x.name),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
-
-class _Fallback extends StatelessWidget {
-  const _Fallback({required this.onHome});
-  final VoidCallback onHome;
-  @override
-  Widget build(BuildContext context) => AppScaffold(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Spacer(),
-        const Text('PRODUCT UNAVAILABLE', style: AppTypography.label),
-        const SizedBox(height: 12),
-        const Text(
-          'This product is not in the current collection.',
-          style: AppTypography.headline,
-        ),
-        const Spacer(),
-        AppTextButton(label: 'Back Home', onPressed: onHome),
-      ],
-    ),
-  );
 }
