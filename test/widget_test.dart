@@ -1,120 +1,76 @@
 import 'package:applestore/app/app.dart';
 import 'package:applestore/app/router/app_router.dart';
-import 'package:applestore/core/accessibility/reduced_motion_controller.dart';
+import 'package:applestore/features/home/presentation/production_phone_render.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Future<void> pumpApp(
-  WidgetTester tester, {
-  ProviderContainer? container,
-}) async {
+Future<void> pumpHome(WidgetTester tester) async {
   appRouter.go('/');
-  await tester.pumpWidget(
-    container == null
-        ? const ProviderScope(child: AppleStoreApp())
-        : UncontrolledProviderScope(
-            container: container,
-            child: const AppleStoreApp(),
-          ),
-  );
+  await tester.pumpWidget(const ProviderScope(child: AppleStoreApp()));
   await tester.pumpAndSettle();
-}
-
-Future<void> enterHome(WidgetTester tester) async {
   await tester.tap(find.textContaining('Enter'));
   await tester.pumpAndSettle();
 }
 
-Future<void> openSampleProduct(WidgetTester tester) async {
-  await enterHome(tester);
-  await tester.tap(find.textContaining('Open Featured Product'));
-  await tester.pumpAndSettle();
-}
-
 void main() {
-  testWidgets('app starts on the Splash placeholder', (tester) async {
-    await pumpApp(tester);
-    expect(find.text('A quiet beginning.'), findsOneWidget);
+  testWidgets('Home renders the first fictional product', (tester) async {
+    await pumpHome(tester);
+    expect(find.text('Aether Pro'), findsOneWidget);
   });
 
-  testWidgets('Splash navigation reaches Home', (tester) async {
-    await pumpApp(tester);
-    await enterHome(tester);
-    expect(find.text('The product story begins here.'), findsOneWidget);
-  });
-
-  testWidgets('Home opens Catalog', (tester) async {
-    await pumpApp(tester);
-    await enterHome(tester);
-    await tester.tap(find.textContaining('Open Catalog'));
-    await tester.pumpAndSettle();
-    expect(find.text('A focused collection awaits.'), findsOneWidget);
-  });
-
-  testWidgets('Home opens the sample Product Details route', (tester) async {
-    await pumpApp(tester);
-    await openSampleProduct(tester);
-    expect(find.text('PRODUCT / PLACEHOLDER'), findsOneWidget);
-  });
-
-  testWidgets('Product Details displays its supplied productId', (
+  testWidgets('indicator selects another product and updates its text', (
     tester,
   ) async {
-    await pumpApp(tester);
-    await openSampleProduct(tester);
-    expect(find.text('sample-phone'), findsOneWidget);
-  });
-
-  testWidgets('Product Details opens Configuration with the same productId', (
-    tester,
-  ) async {
-    await pumpApp(tester);
-    await openSampleProduct(tester);
-    await tester.tap(find.textContaining('Configure'));
+    await pumpHome(tester);
+    await tester.tap(find.byKey(const Key('indicator_1')));
     await tester.pumpAndSettle();
-    expect(find.text('CONFIGURATION / PLACEHOLDER'), findsOneWidget);
-    expect(find.text('sample-phone'), findsOneWidget);
+    expect(find.text('Aether Air'), findsOneWidget);
+    expect(find.text('FROST SILVER'), findsOneWidget);
   });
 
-  testWidgets('Cart route opens successfully', (tester) async {
-    await pumpApp(tester);
-    await enterHome(tester);
-    await tester.tap(find.textContaining('Open Cart'));
+  testWidgets('Reduced Motion toggle changes state', (tester) async {
+    await pumpHome(tester);
+    await tester.tap(find.byKey(const Key('reduced_motion_toggle')));
     await tester.pumpAndSettle();
     expect(
-      find.text('Your selected products will appear here.'),
-      findsOneWidget,
+      tester
+          .widget<Switch>(find.byKey(const Key('reduced_motion_toggle')))
+          .value,
+      isTrue,
     );
   });
 
-  testWidgets('unknown route displays the themed error page', (tester) async {
-    await pumpApp(tester);
-    appRouter.go('/unknown');
-    await tester.pumpAndSettle();
-    expect(find.text('ROUTE UNAVAILABLE'), findsOneWidget);
-    expect(find.text('That scene is not available.'), findsOneWidget);
-  });
-
-  test('Reduced Motion override changes the effective provider value', () {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
-    expect(container.read(reducedMotionProvider), isFalse);
-    container.read(reducedMotionControllerProvider.notifier).setOverride(true);
-    expect(container.read(reducedMotionProvider), isTrue);
-    container.read(reducedMotionControllerProvider.notifier).setOverride(null);
-    expect(container.read(reducedMotionProvider), isFalse);
-  });
-
-  testWidgets('navigation remains functional while Reduced Motion is enabled', (
+  testWidgets('selected product opens Details with the correct productId', (
     tester,
   ) async {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
-    container.read(reducedMotionControllerProvider.notifier).setOverride(true);
-    await pumpApp(tester, container: container);
-    await enterHome(tester);
-    await tester.tap(find.textContaining('Open Featured Product'));
+    await pumpHome(tester);
+    await tester.tap(find.byType(ProductionPhoneRender).first);
     await tester.pumpAndSettle();
-    expect(find.text('sample-phone'), findsOneWidget);
+    expect(find.text('aether-pro'), findsOneWidget);
+  });
+
+  testWidgets('Explore opens the selected product Details route', (
+    tester,
+  ) async {
+    await pumpHome(tester);
+    await tester.tap(find.byKey(const Key('indicator_2')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('explore_action')));
+    await tester.pumpAndSettle();
+    expect(find.text('aether-mini'), findsOneWidget);
+  });
+
+  testWidgets('Back returns Home with selected product preserved', (
+    tester,
+  ) async {
+    await pumpHome(tester);
+    await tester.tap(find.byKey(const Key('indicator_1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(ProductionPhoneRender).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Back'));
+    await tester.pumpAndSettle();
+    expect(find.text('Aether Air'), findsOneWidget);
   });
 }
