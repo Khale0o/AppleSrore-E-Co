@@ -12,11 +12,15 @@ class HomeProduct {
     required this.end,
     required this.accent,
     required this.cameraCount,
+    required this.features,
+    required this.basePrice,
     required this.widthFactor,
   });
   final String id, name, finish, tagline, metadata, price;
   final Color start, end, accent;
   final int cameraCount;
+  final List<String> features;
+  final int basePrice;
   final double widthFactor;
   String get heroTag => 'home-product-$id';
 }
@@ -34,6 +38,12 @@ const homeProducts = <HomeProduct>[
     accent: Color(0xFF9EDDF8),
     cameraCount: 3,
     widthFactor: 1,
+    basePrice: 899,
+    features: [
+      'Aerospace alloy frame',
+      'Quiet edge illumination',
+      'Focused thermal core',
+    ],
   ),
   HomeProduct(
     id: 'aether-air',
@@ -47,6 +57,12 @@ const homeProducts = <HomeProduct>[
     accent: Color(0xFFC8F5FF),
     cameraCount: 2,
     widthFactor: .91,
+    basePrice: 749,
+    features: [
+      'Feathered metal frame',
+      'Diffuse studio glow',
+      'All-day atmospheric power',
+    ],
   ),
   HomeProduct(
     id: 'aether-mini',
@@ -60,9 +76,21 @@ const homeProducts = <HomeProduct>[
     accent: Color(0xFF9DBAFF),
     cameraCount: 2,
     widthFactor: .82,
+    basePrice: 599,
+    features: [
+      'Compact luminous panel',
+      'Tuned camera array',
+      'Balanced daily power',
+    ],
   ),
 ];
 HomeProduct productForId(String id) => homeProducts.firstWhere(
   (product) => product.id == id,
   orElse: () => homeProducts.first,
 );
+HomeProduct? productForIdOrNull(String id) {
+  for (final product in homeProducts) {
+    if (product.id == id) return product;
+  }
+  return null;
+}
