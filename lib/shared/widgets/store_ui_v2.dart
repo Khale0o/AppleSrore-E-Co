@@ -92,11 +92,13 @@ class StoreProductCard extends StatefulWidget {
     required this.onSaved,
     required this.onOpen,
     this.imagePath,
+    this.price,
     this.discount,
     this.originalPrice,
   });
   final HomeProduct product;
   final String? imagePath;
+  final int? price;
   final bool saved;
   final VoidCallback onSaved;
   final VoidCallback onOpen;

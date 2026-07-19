@@ -6,6 +6,7 @@ import '../../features/cart/presentation/cart_placeholder_page.dart';
 import '../../features/catalog/presentation/catalog_placeholder_page.dart';
 import '../../features/checkout/presentation/checkout_page.dart';
 import '../../features/home/presentation/home_placeholder_page.dart';
+import '../../features/onboarding/presentation/onboarding_page.dart';
 import '../../features/product_configuration/presentation/product_configuration_placeholder_page.dart';
 import '../../features/product_details/presentation/product_details_placeholder_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
@@ -36,6 +37,15 @@ final appRouter = GoRouter(
       name: AppRoutes.splash,
       path: AppRoutes.splashPath,
       pageBuilder: (c, s) => _page(s, c, const SplashPlaceholderPage()),
+    ),
+    GoRoute(
+      name: AppRoutes.onboarding,
+      path: AppRoutes.onboardingPath,
+      pageBuilder: (c, s) => _page(
+        s,
+        c,
+        OnboardingPage(preview: s.uri.queryParameters['preview'] == 'true'),
+      ),
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>

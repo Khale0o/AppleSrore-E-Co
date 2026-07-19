@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/app_routes.dart';
 import '../../../app/theme/store_theme_v2.dart';
 import '../../../core/accessibility/reduced_motion_controller.dart';
 
@@ -100,6 +102,16 @@ class ProfilePage extends ConsumerWidget {
                 onChanged: (value) => ref
                     .read(reducedMotionControllerProvider.notifier)
                     .setOverride(value),
+              ),
+            ),
+            const SizedBox(height: 10),
+            _ProfileRow(
+              icon: Icons.slideshow_rounded,
+              title: 'View onboarding',
+              subtitle: 'Replay the product experience introduction',
+              onTap: () => context.pushNamed(
+                AppRoutes.onboarding,
+                queryParameters: const {'preview': 'true'},
               ),
             ),
             const SizedBox(height: 20),

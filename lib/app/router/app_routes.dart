@@ -1,5 +1,6 @@
 abstract final class AppRoutes {
   static const splash = 'splash',
+      onboarding = 'onboarding',
       home = 'home',
       catalog = 'catalog',
       product = 'product',
@@ -9,6 +10,7 @@ abstract final class AppRoutes {
       saved = 'saved',
       profile = 'profile';
   static const splashPath = '/',
+      onboardingPath = '/onboarding',
       homePath = '/home',
       catalogPath = '/catalog',
       productPath = '/product/:productId',

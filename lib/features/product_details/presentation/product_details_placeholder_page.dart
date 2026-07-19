@@ -13,13 +13,54 @@ import '../../saved/presentation/saved_state.dart';
 import 'product_option_selectors.dart';
 import 'product_variants.dart';
 
-class ProductDetailsPlaceholderPage extends ConsumerWidget {
+class ProductDetailsPlaceholderPage extends ConsumerStatefulWidget {
   const ProductDetailsPlaceholderPage({super.key, required this.productId});
   final String productId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final product = productForIdOrNull(productId);
+  ConsumerState<ProductDetailsPlaceholderPage> createState() =>
+      _ProductDetailsState();
+}
+
+class _ProductDetailsState extends ConsumerState<ProductDetailsPlaceholderPage>
+    with TickerProviderStateMixin {
+  late final AnimationController _flightController;
+  late final AnimationController _bagController;
+  late final AnimationController _revealController;
+  final _productKey = GlobalKey();
+  final _bagKey = GlobalKey();
+  OverlayEntry? _flightEntry;
+
+  @override
+  void initState() {
+    super.initState();
+    _flightController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 460),
+    );
+    _bagController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 170),
+    );
+    _revealController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 460),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _flightEntry?.remove();
+    _flightEntry = null;
+    _flightController.dispose();
+    _bagController.dispose();
+    _revealController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final product = productForIdOrNull(widget.productId);
     if (product == null) return const _ProductUnavailable();
 
     ref.watch(productSelectionsProvider);
@@ -41,6 +82,7 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
         product.basePrice +
         variant.priceAdjustment +
         selectedOptionsPriceAdjustment(product, selection);
+    final optionLabels = selectedOptionsForCart(product, selection);
     final related = homeProducts
         .where(
           (item) => item.category == product.category && item.id != product.id,
@@ -67,7 +109,7 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                     variantName: variant.displayName,
                     imagePath: variant.imagePath,
                     optionValueIds: selection.optionValueIds,
-                    optionLabels: selectedOptionsForCart(product, selection),
+                    optionLabels: optionLabels,
                     price: price,
                   ),
                 ),
@@ -78,6 +120,17 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
               const SnackBar(content: Text('Product ready to share.')),
             ),
             icon: const Icon(Icons.ios_share_rounded),
+          ),
+          ScaleTransition(
+            key: _bagKey,
+            scale: Tween<double>(begin: 1, end: 1.12).animate(
+              CurvedAnimation(parent: _bagController, curve: Curves.easeOut),
+            ),
+            child: IconButton(
+              tooltip: 'Bag',
+              onPressed: () => context.goNamed(AppRoutes.cart),
+              icon: const Icon(Icons.shopping_bag_outlined),
+            ),
           ),
         ],
       ),
@@ -94,20 +147,31 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(
-                          height: 330,
-                          child: Hero(
-                            tag: product.heroTag,
-                            child: AnimatedSwitcher(
-                              duration: Duration(
-                                milliseconds: reduced ? 80 : 220,
-                              ),
-                              child: StoreProductImageStage(
-                                key: ValueKey('${product.id}-${variant.id}'),
-                                product: product,
-                                imagePath: variant.imagePath,
-                                background: Colors.white,
-                                padding: const EdgeInsets.all(28),
+                        _Reveal(
+                          animation: _revealController,
+                          reduced: reduced,
+                          start: 0,
+                          end: 0.62,
+                          child: SizedBox(
+                            key: _productKey,
+                            height: 330,
+                            child: Hero(
+                              tag: product.heroTag,
+                              child: AnimatedSwitcher(
+                                duration: Duration(
+                                  milliseconds: reduced ? 80 : 220,
+                                ),
+                                child: StoreProductImageStage(
+                                  key: ValueKey('${product.id}-${variant.id}'),
+                                  product: product,
+                                  imagePath: variant.imagePath,
+                                  background: Color.lerp(
+                                    Colors.white,
+                                    variant.swatch,
+                                    0.08,
+                                  )!,
+                                  padding: const EdgeInsets.all(28),
+                                ),
                               ),
                             ),
                           ),
@@ -199,16 +263,20 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        Text(
-                          formatUsd(price),
-                          style: const TextStyle(
-                            color: StoreColors.ink,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
+                        AnimatedSwitcher(
+                          duration: Duration(milliseconds: reduced ? 70 : 180),
+                          child: Text(
+                            formatUsd(price),
+                            key: ValueKey(price),
+                            style: const TextStyle(
+                              color: StoreColors.ink,
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Text(product.description),
+                        Text(product.longDescription),
                         const SizedBox(height: 22),
                         if (variants.length > 1) ...[
                           Text(
@@ -218,16 +286,16 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                           const SizedBox(height: 10),
                           Wrap(
                             spacing: 10,
+                            runSpacing: 10,
                             children: variants
                                 .map(
-                                  (item) => ChoiceChip(
-                                    label: Text(item.displayName),
-                                    avatar: CircleAvatar(
-                                      radius: 8,
-                                      backgroundColor: item.swatch,
-                                    ),
+                                  (item) => _FinishChoice(
+                                    key: Key('finish-${item.id}'),
+                                    label: item.displayName,
+                                    swatch: item.swatch,
                                     selected: item.id == variant.id,
-                                    onSelected: (_) =>
+                                    reduced: reduced,
+                                    onTap: () =>
                                         selections.setVariant(product, item.id),
                                   ),
                                 )
@@ -243,7 +311,7 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'About this product',
+                          'Why you’ll love it',
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 10),
@@ -264,49 +332,29 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: FilledButton.icon(
-                            key: const Key('details_add_to_cart'),
-                            onPressed: () {
-                              ref
-                                  .read(cartProvider.notifier)
-                                  .add(
-                                    CartItem(
-                                      productId: product.id,
-                                      name: product.name,
-                                      finish: variant.displayName,
-                                      selectedOptions: selectedOptionsForCart(
-                                        product,
-                                        selection,
-                                      ),
-                                      unitPrice: price,
-                                      variantId: variant.id,
-                                      imagePath: variant.imagePath,
-                                    ),
-                                  );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Added to bag')),
-                              );
-                            },
-                            icon: const Icon(Icons.shopping_bag_outlined),
-                            label: const Text('Add to Cart'),
-                          ),
+                        const SizedBox(height: 30),
+                        Text(
+                          'Specifications',
+                          style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 10),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: OutlinedButton(
-                            onPressed: () => context.pushNamed(
-                              AppRoutes.configure,
-                              pathParameters: {'productId': product.id},
-                            ),
-                            child: const Text('Configure'),
-                          ),
+                        ...product.specificationGroups.map(
+                          (group) => _SpecificationPanel(group: group),
                         ),
+                        if (product.compatibility.isNotEmpty) ...[
+                          const SizedBox(height: 22),
+                          _EditorialList(
+                            title: 'Compatibility',
+                            values: product.compatibility,
+                          ),
+                        ],
+                        if (product.includedItems.isNotEmpty) ...[
+                          const SizedBox(height: 22),
+                          _EditorialList(
+                            title: 'What’s in the box',
+                            values: product.includedItems,
+                          ),
+                        ],
                         const SizedBox(height: 30),
                         const StoreSectionHeader(title: 'Related products'),
                         const SizedBox(height: 12),
@@ -354,6 +402,7 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                             },
                           ),
                         ),
+                        const SizedBox(height: 28),
                       ],
                     ),
                   ),
@@ -363,8 +412,309 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
           ],
         ),
       ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: StoreColors.line)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AnimatedSwitcher(
+                      duration: Duration(milliseconds: reduced ? 60 : 180),
+                      child: Text(
+                        formatUsd(price),
+                        key: ValueKey('sticky-$price'),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      [variant.displayName, ...optionLabels.values].join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: StoreColors.muted,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              SizedBox(
+                height: 50,
+                child: FilledButton.icon(
+                  key: const Key('details_add_to_bag'),
+                  onPressed: () => _addToBag(
+                    product: product,
+                    variant: variant,
+                    optionLabels: optionLabels,
+                    price: price,
+                    reduced: reduced,
+                  ),
+                  icon: const Icon(Icons.shopping_bag_outlined),
+                  label: const Text('Add to Bag'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
+
+  Future<void> _addToBag({
+    required HomeProduct product,
+    required ProductVariant variant,
+    required Map<String, String> optionLabels,
+    required int price,
+    required bool reduced,
+  }) async {
+    ref
+        .read(cartProvider.notifier)
+        .add(
+          CartItem(
+            productId: product.id,
+            name: product.name,
+            finish: variant.displayName,
+            selectedOptions: optionLabels,
+            unitPrice: price,
+            variantId: variant.id,
+            imagePath: variant.imagePath,
+          ),
+        );
+    if (!reduced) await _runFlight(product, variant.imagePath);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(const SnackBar(content: Text('Added to bag')));
+  }
+
+  Future<void> _runFlight(HomeProduct product, String imagePath) async {
+    if (_flightController.isAnimating || _flightEntry != null) return;
+    final startBox =
+        _productKey.currentContext?.findRenderObject() as RenderBox?;
+    final endBox = _bagKey.currentContext?.findRenderObject() as RenderBox?;
+    if (startBox == null || endBox == null) return;
+    final start = startBox.localToGlobal(startBox.size.center(Offset.zero));
+    final end = endBox.localToGlobal(endBox.size.center(Offset.zero));
+    _flightEntry = OverlayEntry(
+      builder: (context) => IgnorePointer(
+        child: AnimatedBuilder(
+          animation: _flightController,
+          builder: (context, child) {
+            final t = Curves.easeInOutCubic.transform(_flightController.value);
+            final curve = Offset(0, -74 * 4 * t * (1 - t));
+            final position = Offset.lerp(start, end, t)! + curve;
+            return Stack(
+              children: [
+                Positioned(
+                  left: position.dx - 29,
+                  top: position.dy - 35,
+                  child: Opacity(
+                    opacity: 1 - t * 0.28,
+                    child: Transform.scale(
+                      scale: 1 - t * 0.56,
+                      child: SizedBox(
+                        width: 58,
+                        height: 70,
+                        child: ProductImage(
+                          path: imagePath,
+                          label: product.name,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+    Overlay.of(context, rootOverlay: true).insert(_flightEntry!);
+    await _flightController.forward(from: 0);
+    _flightEntry?.remove();
+    _flightEntry = null;
+    if (!mounted) return;
+    await _bagController.forward(from: 0);
+    if (mounted) await _bagController.reverse();
+  }
+}
+
+class _Reveal extends StatelessWidget {
+  const _Reveal({
+    required this.animation,
+    required this.reduced,
+    required this.start,
+    required this.end,
+    required this.child,
+  });
+  final Animation<double> animation;
+  final bool reduced;
+  final double start, end;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) {
+    if (reduced) return child;
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Interval(start, end, curve: Curves.easeOutCubic),
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.025),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _FinishChoice extends StatelessWidget {
+  const _FinishChoice({
+    super.key,
+    required this.label,
+    required this.swatch,
+    required this.selected,
+    required this.reduced,
+    required this.onTap,
+  });
+  final String label;
+  final Color swatch;
+  final bool selected, reduced;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    selected: selected,
+    label: '$label finish',
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: reduced ? 0 : 170),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? StoreColors.softRed : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? StoreColors.red : StoreColors.line,
+            width: selected ? 1.6 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: swatch,
+                border: Border.all(color: Colors.black12),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? StoreColors.red : StoreColors.ink,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _SpecificationPanel extends StatelessWidget {
+  const _SpecificationPanel({required this.group});
+  final ProductSpecificationGroup group;
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      border: Border.all(color: StoreColors.line),
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: ExpansionTile(
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      shape: const Border(),
+      collapsedShape: const Border(),
+      title: Text(
+        group.title,
+        style: const TextStyle(fontWeight: FontWeight.w800),
+      ),
+      children: [
+        for (final entry in group.entries.entries)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 7),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    entry.key,
+                    style: const TextStyle(color: StoreColors.muted),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    entry.value,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+class _EditorialList extends StatelessWidget {
+  const _EditorialList({required this.title, required this.values});
+  final String title;
+  final List<String> values;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(title, style: Theme.of(context).textTheme.titleLarge),
+      const SizedBox(height: 10),
+      for (final value in values)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 7),
+          child: Row(
+            children: [
+              const Icon(Icons.add_rounded, size: 16, color: StoreColors.red),
+              const SizedBox(width: 8),
+              Expanded(child: Text(value)),
+            ],
+          ),
+        ),
+    ],
+  );
 }
 
 class _ProductUnavailable extends StatelessWidget {

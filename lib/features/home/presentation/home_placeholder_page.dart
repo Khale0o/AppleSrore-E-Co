@@ -166,12 +166,32 @@ class _HomeState extends ConsumerState<HomePlaceholderPage> {
                         itemCount: heroProducts.length,
                         onPageChanged: (index) =>
                             setState(() => selectedHero = index),
-                        itemBuilder: (context, index) => _CampaignHero(
-                          product: heroProducts[index],
-                          imagePath: _selectedVariant(
-                            heroProducts[index],
-                          ).imagePath,
-                          onOpen: () => _open(heroProducts[index]),
+                        itemBuilder: (context, index) => AnimatedBuilder(
+                          animation: _heroController,
+                          builder: (context, child) {
+                            final page = _heroController.hasClients
+                                ? (_heroController.page ??
+                                      selectedHero.toDouble())
+                                : selectedHero.toDouble();
+                            final distance = (page - index).abs().clamp(0, 1);
+                            return Transform.translate(
+                              offset: Offset(
+                                reduced ? 0 : (page - index) * -10,
+                                reduced ? 0 : distance * 8,
+                              ),
+                              child: Transform.scale(
+                                scale: reduced ? 1 : 1 - distance * 0.045,
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _CampaignHero(
+                            product: heroProducts[index],
+                            imagePath: _selectedVariant(
+                              heroProducts[index],
+                            ).imagePath,
+                            onOpen: () => _open(heroProducts[index]),
+                          ),
                         ),
                       ),
                     ),
@@ -353,10 +373,7 @@ class _CampaignHero extends StatelessWidget {
                 flex: 6,
                 child: Hero(
                   tag: product.heroTag,
-                  child: ProductImage(
-                    path: imagePath,
-                    label: product.name,
-                  ),
+                  child: ProductImage(path: imagePath, label: product.name),
                 ),
               ),
             ],
