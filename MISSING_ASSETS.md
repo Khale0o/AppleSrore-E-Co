@@ -1,57 +1,8 @@
-# Exact Product Assets Required
+# Asset Coverage
 
-The app currently uses six original unbranded family images. The UI remains functional, but exact per-model imagery is required before asset coverage can be called complete.
+No product asset is missing from the normal shopping flow.
 
-## iPhone
-
-- `assets/products/iphone/iphone-17-pro_default.webp`
-- `assets/products/iphone/iphone-17-pro-max_default.webp`
-- `assets/products/iphone/iphone-air_default.webp`
-- `assets/products/iphone/iphone-17_default.webp`
-- `assets/products/iphone/iphone-17e_default.webp`
-- `assets/products/iphone/iphone-16_default.webp`
-- `assets/products/iphone/iphone-17-pro_red_front.webp`
-- `assets/products/iphone/iphone-17-pro_red_back.webp`
-- `assets/products/iphone/iphone-17-pro_blue_front.webp`
-- `assets/products/iphone/iphone-17-pro_blue_back.webp`
-- `assets/products/iphone/iphone-17-pro_black_front.webp`
-- `assets/products/iphone/iphone-17-pro_black_back.webp`
-
-## Mac
-
-- `assets/products/mac/macbook-air-13_default.webp`
-- `assets/products/mac/macbook-air-15_default.webp`
-- `assets/products/mac/macbook-pro-14_default.webp`
-- `assets/products/mac/macbook-pro-16_default.webp`
-- `assets/products/mac/imac_default.webp`
-- `assets/products/mac/mac-mini_default.webp`
-- `assets/products/mac/mac-studio_default.webp`
-
-## iPad
-
-- `assets/products/ipad/ipad-pro-11_default.webp`
-- `assets/products/ipad/ipad-pro-13_default.webp`
-- `assets/products/ipad/ipad-air_default.webp`
-- `assets/products/ipad/ipad_default.webp`
-- `assets/products/ipad/ipad-mini_default.webp`
-
-## Watch
-
-- `assets/products/watch/watch-series-11_default.webp`
-- `assets/products/watch/watch-ultra-3_default.webp`
-- `assets/products/watch/watch-se-3_default.webp`
-
-## AirPods
-
-- `assets/products/airpods/airpods-pro-3_default.webp`
-- `assets/products/airpods/airpods-4_default.webp`
-- `assets/products/airpods/airpods-max-2_default.webp`
-
-## Accessories
-
-- `assets/products/accessories/apple-pencil-pro_default.webp`
-- `assets/products/accessories/magic-keyboard_default.webp`
-- `assets/products/accessories/magsafe-charger_default.webp`
-- `assets/products/accessories/airtag_default.webp`
-
-Each file must be local, rights-cleared, correctly cropped, and recorded in `ASSET_SOURCES.md`. Unavailable finishes remain hidden until their exact files exist.
+- 28 visible product models resolve to distinct local renders.
+- iPhone 17 Pro exposes three finish variants, each backed by a separate matching local file.
+- Other products expose only the finish represented by their verified local render.
+- The six older family-level images are no longer referenced by production product data.

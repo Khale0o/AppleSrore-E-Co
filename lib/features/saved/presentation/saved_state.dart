@@ -6,9 +6,18 @@ class SavedItem {
     required this.variantId,
     required this.variantName,
     required this.imagePath,
+    this.optionValueIds = const {},
+    this.optionLabels = const {},
+    this.price,
   });
   final String productId, variantId, variantName, imagePath;
-  String get key => '$productId|$variantId';
+  final Map<String, String> optionValueIds, optionLabels;
+  final int? price;
+  String get key {
+    final options = optionValueIds.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    return '$productId|$variantId|${options.map((e) => '${e.key}=${e.value}').join('|')}';
+  }
 }
 
 class SavedController extends Notifier<List<SavedItem>> {

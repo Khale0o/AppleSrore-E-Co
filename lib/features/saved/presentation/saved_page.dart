@@ -7,6 +7,7 @@ import '../../../app/theme/store_theme_v2.dart';
 import '../../../shared/widgets/product_image.dart';
 import '../../../shared/widgets/store_ui_v2.dart';
 import '../../home/presentation/home_products.dart';
+import '../../product_details/presentation/product_variants.dart';
 import 'saved_state.dart';
 
 class SavedPage extends ConsumerStatefulWidget {
@@ -82,10 +83,18 @@ class _SavedPageState extends ConsumerState<SavedPage> {
                             saved: saved,
                             onRemove: () =>
                                 ref.read(savedProvider.notifier).remove(saved),
-                            onOpen: () => context.pushNamed(
-                              AppRoutes.product,
-                              pathParameters: {'productId': product.id},
-                            ),
+                            onOpen: () {
+                              ref
+                                  .read(productSelectionsProvider.notifier)
+                                  .setVariant(product, saved.variantId);
+                              ref
+                                  .read(productSelectionsProvider.notifier)
+                                  .setOptions(product, saved.optionValueIds);
+                              context.pushNamed(
+                                AppRoutes.product,
+                                pathParameters: {'productId': product.id},
+                              );
+                            },
                           );
                         },
                       ),
@@ -169,10 +178,15 @@ class _SavedProductRow extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 4),
-                  Text(saved.variantName),
+                  Text(
+                    [
+                      saved.variantName,
+                      ...saved.optionLabels.values,
+                    ].join(' · '),
+                  ),
                   const SizedBox(height: 12),
                   Text(
-                    formatUsd(product.basePrice),
+                    formatUsd(saved.price ?? product.basePrice),
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       color: StoreColors.ink,
@@ -217,7 +231,7 @@ class _CollectionsEmpty extends StatelessWidget {
       children: [
         Icon(Icons.collections_bookmark_outlined, size: 58),
         SizedBox(height: 14),
-        Text('Collections are a UI-only preview.'),
+        Text('Build collections around the products you love.'),
       ],
     ),
   );

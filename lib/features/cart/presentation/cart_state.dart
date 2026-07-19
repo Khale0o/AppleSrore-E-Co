@@ -5,22 +5,34 @@ class CartItem {
     required this.productId,
     required this.name,
     required this.finish,
-    required this.storage,
     required this.unitPrice,
+    this.selectedOptions = const {},
     this.variantId = 'default',
     this.imagePath = '',
     this.quantity = 1,
   });
-  final String productId, name, finish, storage;
+  final String productId, name, finish;
   final String variantId, imagePath;
+  final Map<String, String> selectedOptions;
   final int unitPrice, quantity;
-  String get key => '$productId|$variantId|$finish|$storage';
+  String get key {
+    final entries = selectedOptions.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final options = entries
+        .map((entry) => '${entry.key}=${entry.value}')
+        .join('|');
+    return '$productId|$variantId|$options';
+  }
+
+  String get optionSummary =>
+      [if (finish.isNotEmpty) finish, ...selectedOptions.values].join(' / ');
+
   CartItem copyWith({int? quantity}) => CartItem(
     productId: productId,
     name: name,
     finish: finish,
-    storage: storage,
     unitPrice: unitPrice,
+    selectedOptions: selectedOptions,
     variantId: variantId,
     imagePath: imagePath,
     quantity: quantity ?? this.quantity,

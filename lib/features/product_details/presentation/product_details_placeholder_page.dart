@@ -10,6 +10,7 @@ import '../../../shared/widgets/store_ui_v2.dart';
 import '../../cart/presentation/cart_state.dart';
 import '../../home/presentation/home_products.dart';
 import '../../saved/presentation/saved_state.dart';
+import 'product_option_selectors.dart';
 import 'product_variants.dart';
 
 class ProductDetailsPlaceholderPage extends ConsumerWidget {
@@ -36,6 +37,10 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
               item.productId == product.id && item.variantId == variant.id,
         );
     final reduced = ref.watch(reducedMotionProvider);
+    final price =
+        product.basePrice +
+        variant.priceAdjustment +
+        selectedOptionsPriceAdjustment(product, selection);
     final related = homeProducts
         .where(
           (item) => item.category == product.category && item.id != product.id,
@@ -61,14 +66,17 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                     variantId: variant.id,
                     variantName: variant.displayName,
                     imagePath: variant.imagePath,
+                    optionValueIds: selection.optionValueIds,
+                    optionLabels: selectedOptionsForCart(product, selection),
+                    price: price,
                   ),
                 ),
           ),
           IconButton(
             tooltip: 'Share',
-            onPressed: () => ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('Share is UI only.'))),
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Product ready to share.')),
+            ),
             icon: const Icon(Icons.ios_share_rounded),
           ),
         ],
@@ -88,56 +96,61 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                       children: [
                         SizedBox(
                           height: 330,
-                          child: AnimatedSwitcher(
-                            duration: Duration(
-                              milliseconds: reduced ? 80 : 220,
-                            ),
-                            child: StoreProductImageStage(
-                              key: ValueKey('${product.id}-${variant.id}'),
-                              product: product,
-                              heroTag: product.heroTag,
-                              background: Colors.white,
-                              padding: const EdgeInsets.all(28),
+                          child: Hero(
+                            tag: product.heroTag,
+                            child: AnimatedSwitcher(
+                              duration: Duration(
+                                milliseconds: reduced ? 80 : 220,
+                              ),
+                              child: StoreProductImageStage(
+                                key: ValueKey('${product.id}-${variant.id}'),
+                                product: product,
+                                imagePath: variant.imagePath,
+                                background: Colors.white,
+                                padding: const EdgeInsets.all(28),
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          height: 62,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: variants.length,
-                            itemBuilder: (context, index) {
-                              final item = variants[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: InkWell(
-                                  onTap: () =>
-                                      selections.setVariant(product, item.id),
-                                  child: Container(
-                                    width: 62,
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: item.id == variant.id
-                                            ? StoreColors.red
-                                            : StoreColors.line,
-                                        width: item.id == variant.id ? 2 : 1,
+                        if (variants.length > 1) ...[
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            height: 62,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: variants.length,
+                              itemBuilder: (context, index) {
+                                final item = variants[index];
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: InkWell(
+                                    onTap: () =>
+                                        selections.setVariant(product, item.id),
+                                    child: Container(
+                                      width: 62,
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: item.id == variant.id
+                                              ? StoreColors.red
+                                              : StoreColors.line,
+                                          width: item.id == variant.id ? 2 : 1,
+                                        ),
+                                      ),
+                                      child: ProductImage(
+                                        path: item.imagePath,
+                                        label:
+                                            '${product.name} ${item.displayName}',
                                       ),
                                     ),
-                                    child: ProductImage(
-                                      path: item.imagePath,
-                                      label:
-                                          '${product.name} ${item.displayName}',
-                                    ),
                                   ),
-                                ),
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
-                        ),
+                        ],
                         const SizedBox(height: 20),
                         Text(
                           product.category.label,
@@ -152,7 +165,9 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                           style: Theme.of(context).textTheme.displaySmall,
                         ),
                         const SizedBox(height: 10),
-                        const Row(
+                        const Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          runSpacing: 4,
                           children: [
                             Icon(
                               Icons.star_rounded,
@@ -180,14 +195,12 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                               size: 20,
                             ),
                             SizedBox(width: 8),
-                            Text('4.8 · Demo rating'),
+                            Text('4.8 · 2.3k reviews'),
                           ],
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          formatUsd(
-                            product.basePrice + variant.priceAdjustment,
-                          ),
+                          formatUsd(price),
                           style: const TextStyle(
                             color: StoreColors.ink,
                             fontSize: 26,
@@ -197,49 +210,38 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                         const SizedBox(height: 12),
                         Text(product.description),
                         const SizedBox(height: 22),
-                        Text(
-                          'Finish',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 10,
-                          children: variants
-                              .map(
-                                (item) => ChoiceChip(
-                                  label: Text(item.displayName),
-                                  avatar: CircleAvatar(
-                                    radius: 8,
-                                    backgroundColor: item.swatch,
+                        if (variants.length > 1) ...[
+                          Text(
+                            'Finish',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 10,
+                            children: variants
+                                .map(
+                                  (item) => ChoiceChip(
+                                    label: Text(item.displayName),
+                                    avatar: CircleAvatar(
+                                      radius: 8,
+                                      backgroundColor: item.swatch,
+                                    ),
+                                    selected: item.id == variant.id,
+                                    onSelected: (_) =>
+                                        selections.setVariant(product, item.id),
                                   ),
-                                  selected: item.id == variant.id,
-                                  onSelected: (_) =>
-                                      selections.setVariant(product, item.id),
-                                ),
-                              )
-                              .toList(),
+                                )
+                                .toList(),
+                          ),
+                          const SizedBox(height: 18),
+                        ],
+                        ProductOptionSelectors(
+                          product: product,
+                          selection: selection,
+                          onSelected: (groupId, valueId) =>
+                              selections.setOption(product, groupId, valueId),
                         ),
-                        const SizedBox(height: 18),
-                        Text(
-                          'Storage / Size',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: product.configurations
-                              .map(
-                                (value) => ChoiceChip(
-                                  label: Text(value),
-                                  selected: value == selection.configuration,
-                                  onSelected: (_) => selections
-                                      .setConfiguration(product, value),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 6),
                         Text(
                           'About this product',
                           style: Theme.of(context).textTheme.headlineSmall,
@@ -276,10 +278,11 @@ class ProductDetailsPlaceholderPage extends ConsumerWidget {
                                       productId: product.id,
                                       name: product.name,
                                       finish: variant.displayName,
-                                      storage: selection.configuration,
-                                      unitPrice:
-                                          product.basePrice +
-                                          variant.priceAdjustment,
+                                      selectedOptions: selectedOptionsForCart(
+                                        product,
+                                        selection,
+                                      ),
+                                      unitPrice: price,
                                       variantId: variant.id,
                                       imagePath: variant.imagePath,
                                     ),

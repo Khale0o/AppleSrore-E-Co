@@ -7,6 +7,7 @@ import '../../../app/theme/store_theme_v2.dart';
 import '../../../shared/widgets/product_image.dart';
 import '../../../shared/widgets/store_ui_v2.dart';
 import '../../home/presentation/home_products.dart';
+import '../../product_details/presentation/product_variants.dart';
 import '../../saved/presentation/saved_state.dart';
 
 class CatalogPlaceholderPage extends ConsumerStatefulWidget {
@@ -33,21 +34,51 @@ class _CatalogState extends ConsumerState<CatalogPlaceholderPage> {
     return values;
   }
 
-  void _toggleSaved(HomeProduct product) => ref
-      .read(savedProvider.notifier)
-      .toggle(
-        SavedItem(
-          productId: product.id,
-          variantId: 'default',
-          variantName: product.finish,
-          imagePath: product.assetPath,
-        ),
-      );
+  void _toggleSaved(HomeProduct product) {
+    final variant = _selectedVariant(product);
+    final selection = ref
+        .read(productSelectionsProvider.notifier)
+        .forProduct(product);
+    ref
+        .read(savedProvider.notifier)
+        .toggle(
+          SavedItem(
+            productId: product.id,
+            variantId: variant.id,
+            variantName: variant.displayName,
+            imagePath: variant.imagePath,
+            optionValueIds: selection.optionValueIds,
+            optionLabels: selectedOptionsForCart(product, selection),
+            price: _selectedPrice(product),
+          ),
+        );
+  }
+
+  ProductVariant _selectedVariant(HomeProduct product) {
+    final selection = ref
+        .read(productSelectionsProvider.notifier)
+        .forProduct(product);
+    final variants = variantsFor(product);
+    return variants.firstWhere(
+      (variant) => variant.id == selection.variantId,
+      orElse: () => variants.first,
+    );
+  }
+
+  int _selectedPrice(HomeProduct product) {
+    final selection = ref
+        .read(productSelectionsProvider.notifier)
+        .forProduct(product);
+    return product.basePrice +
+        _selectedVariant(product).priceAdjustment +
+        selectedOptionsPriceAdjustment(product, selection);
+  }
 
   @override
   Widget build(BuildContext context) {
     final filtered = products;
     final saved = ref.watch(savedProvider);
+    ref.watch(productSelectionsProvider);
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -121,7 +152,10 @@ class _CatalogState extends ConsumerState<CatalogPlaceholderPage> {
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(horizontal, 8, horizontal, 18),
                   sliver: SliverToBoxAdapter(
-                    child: _CatalogBanner(product: homeProducts[2]),
+                    child: _CatalogBanner(
+                      product: homeProducts[2],
+                      imagePath: _selectedVariant(homeProducts[2]).imagePath,
+                    ),
                   ),
                 ),
                 SliverPadding(
@@ -134,25 +168,31 @@ class _CatalogState extends ConsumerState<CatalogPlaceholderPage> {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const Spacer(),
-                        DropdownButtonHideUnderline(
-                          child: DropdownButton<int>(
-                            value: sort,
-                            borderRadius: BorderRadius.circular(12),
-                            onChanged: (value) => setState(() => sort = value!),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 0,
-                                child: Text('Featured'),
-                              ),
-                              DropdownMenuItem(
-                                value: 1,
-                                child: Text('Price: low'),
-                              ),
-                              DropdownMenuItem(
-                                value: 2,
-                                child: Text('Price: high'),
-                              ),
-                            ],
+                        SizedBox(
+                          width: 140,
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<int>(
+                              value: sort,
+                              isDense: true,
+                              isExpanded: true,
+                              borderRadius: BorderRadius.circular(12),
+                              onChanged: (value) =>
+                                  setState(() => sort = value!),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 0,
+                                  child: Text('Featured'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 1,
+                                  child: Text('Price: low'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 2,
+                                  child: Text('Price: high'),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -196,6 +236,8 @@ class _CatalogState extends ConsumerState<CatalogPlaceholderPage> {
                         final product = filtered[index];
                         return StoreProductCard(
                           product: product,
+                          imagePath: _selectedVariant(product).imagePath,
+                          price: _selectedPrice(product),
                           saved: saved.any(
                             (item) => item.productId == product.id,
                           ),
@@ -256,11 +298,12 @@ class _CategoryTab extends StatelessWidget {
 }
 
 class _CatalogBanner extends StatelessWidget {
-  const _CatalogBanner({required this.product});
+  const _CatalogBanner({required this.product, required this.imagePath});
   final HomeProduct product;
+  final String imagePath;
   @override
   Widget build(BuildContext context) => Container(
-    height: 156,
+    height: 166,
     padding: const EdgeInsets.fromLTRB(18, 14, 8, 14),
     decoration: BoxDecoration(
       color: StoreColors.ink,
@@ -285,14 +328,18 @@ class _CatalogBanner extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 product.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const Text(
-                'Demo pricing. Portfolio experience.',
+                'A curated lineup for work, play, and everything between.',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: Colors.white60, fontSize: 11),
               ),
             ],
@@ -300,7 +347,7 @@ class _CatalogBanner extends StatelessWidget {
         ),
         SizedBox(
           width: 138,
-          child: ProductImage(path: product.assetPath, label: product.name),
+          child: ProductImage(path: imagePath, label: product.name),
         ),
       ],
     ),

@@ -9,6 +9,7 @@ import '../../../shared/widgets/product_image.dart';
 import '../../../shared/widgets/store_ui_v2.dart';
 import '../../cart/presentation/cart_state.dart';
 import '../../saved/presentation/saved_state.dart';
+import '../../product_details/presentation/product_variants.dart';
 import 'home_products.dart';
 
 class HomePlaceholderPage extends ConsumerStatefulWidget {
@@ -47,20 +48,50 @@ class _HomeState extends ConsumerState<HomePlaceholderPage> {
     pathParameters: {'productId': product.id},
   );
 
-  void _toggleSaved(HomeProduct product) => ref
-      .read(savedProvider.notifier)
-      .toggle(
-        SavedItem(
-          productId: product.id,
-          variantId: 'default',
-          variantName: product.finish,
-          imagePath: product.assetPath,
-        ),
-      );
+  void _toggleSaved(HomeProduct product) {
+    final variant = _selectedVariant(product);
+    final selection = ref
+        .read(productSelectionsProvider.notifier)
+        .forProduct(product);
+    ref
+        .read(savedProvider.notifier)
+        .toggle(
+          SavedItem(
+            productId: product.id,
+            variantId: variant.id,
+            variantName: variant.displayName,
+            imagePath: variant.imagePath,
+            optionValueIds: selection.optionValueIds,
+            optionLabels: selectedOptionsForCart(product, selection),
+            price: _selectedPrice(product),
+          ),
+        );
+  }
+
+  ProductVariant _selectedVariant(HomeProduct product) {
+    final selection = ref
+        .read(productSelectionsProvider.notifier)
+        .forProduct(product);
+    final variants = variantsFor(product);
+    return variants.firstWhere(
+      (variant) => variant.id == selection.variantId,
+      orElse: () => variants.first,
+    );
+  }
+
+  int _selectedPrice(HomeProduct product) {
+    final selection = ref
+        .read(productSelectionsProvider.notifier)
+        .forProduct(product);
+    return product.basePrice +
+        _selectedVariant(product).priceAdjustment +
+        selectedOptionsPriceAdjustment(product, selection);
+  }
 
   @override
   Widget build(BuildContext context) {
     final reduced = ref.watch(reducedMotionProvider);
+    ref.watch(productSelectionsProvider);
     final saved = ref.watch(savedProvider);
     final cartCount = ref.watch(cartCountProvider);
     final heroProducts = [homeProducts[0], homeProducts[6], homeProducts[21]];
@@ -137,6 +168,9 @@ class _HomeState extends ConsumerState<HomePlaceholderPage> {
                             setState(() => selectedHero = index),
                         itemBuilder: (context, index) => _CampaignHero(
                           product: heroProducts[index],
+                          imagePath: _selectedVariant(
+                            heroProducts[index],
+                          ).imagePath,
                           onOpen: () => _open(heroProducts[index]),
                         ),
                       ),
@@ -206,6 +240,8 @@ class _HomeState extends ConsumerState<HomePlaceholderPage> {
                       width: 166,
                       child: StoreProductCard(
                         product: product,
+                        imagePath: _selectedVariant(product).imagePath,
+                        price: _selectedPrice(product),
                         saved: saved.any(
                           (item) => item.productId == product.id,
                         ),
@@ -242,6 +278,8 @@ class _HomeState extends ConsumerState<HomePlaceholderPage> {
                   final product = homeProducts[[0, 6, 13, 18][index]];
                   return StoreProductCard(
                     product: product,
+                    imagePath: _selectedVariant(product).imagePath,
+                    price: _selectedPrice(product),
                     saved: saved.any((item) => item.productId == product.id),
                     onSaved: () => _toggleSaved(product),
                     onOpen: () => _open(product),
@@ -257,8 +295,13 @@ class _HomeState extends ConsumerState<HomePlaceholderPage> {
 }
 
 class _CampaignHero extends StatelessWidget {
-  const _CampaignHero({required this.product, required this.onOpen});
+  const _CampaignHero({
+    required this.product,
+    required this.imagePath,
+    required this.onOpen,
+  });
   final HomeProduct product;
+  final String imagePath;
   final VoidCallback onOpen;
   @override
   Widget build(BuildContext context) => Padding(
@@ -311,7 +354,7 @@ class _CampaignHero extends StatelessWidget {
                 child: Hero(
                   tag: product.heroTag,
                   child: ProductImage(
-                    path: product.assetPath,
+                    path: imagePath,
                     label: product.name,
                   ),
                 ),

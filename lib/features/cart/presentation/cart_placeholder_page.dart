@@ -87,6 +87,7 @@ class CartPlaceholderPage extends ConsumerWidget {
                       child: _OrderSummary(
                         subtotal: subtotal,
                         estimatedTax: estimatedTax,
+                        onCheckout: () => context.pushNamed(AppRoutes.checkout),
                       ),
                     ),
                   ),
@@ -147,7 +148,7 @@ class _CartLine extends StatelessWidget {
                       ),
                     ],
                   ),
-                  Text('${item.finish} / ${item.storage}'),
+                  if (item.optionSummary.isNotEmpty) Text(item.optionSummary),
                   const SizedBox(height: 8),
                   Text(
                     formatUsd(item.unitPrice),
@@ -200,8 +201,13 @@ class _CartLine extends StatelessWidget {
 }
 
 class _OrderSummary extends StatelessWidget {
-  const _OrderSummary({required this.subtotal, required this.estimatedTax});
+  const _OrderSummary({
+    required this.subtotal,
+    required this.estimatedTax,
+    required this.onCheckout,
+  });
   final int subtotal, estimatedTax;
+  final VoidCallback onCheckout;
   @override
   Widget build(BuildContext context) => Card(
     child: Padding(
@@ -224,9 +230,10 @@ class _OrderSummary extends StatelessWidget {
             width: double.infinity,
             height: 52,
             child: FilledButton.icon(
-              onPressed: null,
+              key: const Key('start_checkout'),
+              onPressed: onCheckout,
               icon: const Icon(Icons.lock_outline_rounded),
-              label: const Text('Checkout — UI Only'),
+              label: const Text('Secure Checkout'),
             ),
           ),
         ],

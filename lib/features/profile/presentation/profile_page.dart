@@ -17,50 +17,79 @@ class ProfilePage extends ConsumerWidget {
           children: [
             Text('Profile', style: Theme.of(context).textTheme.displaySmall),
             const SizedBox(height: 22),
-            const Row(
-              children: [
-                CircleAvatar(
-                  radius: 34,
-                  backgroundColor: StoreColors.softRed,
-                  child: Icon(
-                    Icons.person_rounded,
-                    color: StoreColors.red,
-                    size: 36,
-                  ),
-                ),
-                SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Portfolio Guest',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                        ),
+            const Card(
+              color: StoreColors.softRed,
+              child: Padding(
+                padding: EdgeInsets.all(18),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 34,
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        Icons.person_rounded,
+                        color: StoreColors.red,
+                        size: 36,
                       ),
-                      Text('UI-only profile · no account required'),
-                    ],
-                  ),
+                    ),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Portfolio Guest',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text('Demo profile · local session'),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.verified_outlined, color: StoreColors.red),
+                  ],
                 ),
-              ],
+              ),
             ),
             const SizedBox(height: 24),
-            const _ProfileRow(
+            _ProfileRow(
               icon: Icons.receipt_long_outlined,
               title: 'Orders',
-              subtitle: 'Preview order history UI',
+              subtitle: 'Order history and delivery status',
+              onTap: () => _showProfilePanel(
+                context,
+                icon: Icons.receipt_long_outlined,
+                title: 'Orders',
+                message:
+                    'Completed preview orders will appear here with delivery updates.',
+              ),
             ),
-            const _ProfileRow(
+            _ProfileRow(
               icon: Icons.location_on_outlined,
               title: 'Addresses',
-              subtitle: 'Manage delivery address UI',
+              subtitle: 'Delivery addresses for this session',
+              onTap: () => _showProfilePanel(
+                context,
+                icon: Icons.location_on_outlined,
+                title: 'Addresses',
+                message:
+                    'Add an address during preview checkout to complete the delivery flow.',
+              ),
             ),
-            const _ProfileRow(
+            _ProfileRow(
               icon: Icons.tune_rounded,
               title: 'Preferences',
-              subtitle: 'Store and display preferences',
+              subtitle: 'Shopping, display, and accessibility',
+              onTap: () => _showProfilePanel(
+                context,
+                icon: Icons.tune_rounded,
+                title: 'Preferences',
+                message:
+                    'Accessibility preferences apply immediately to this local session.',
+              ),
             ),
             Card(
               child: SwitchListTile(
@@ -86,7 +115,7 @@ class ProfilePage extends ConsumerWidget {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'Unofficial educational and portfolio concept. Not affiliated with or endorsed by Apple Inc. Product names and imagery belong to their respective owners.',
+                      'Unofficial educational and portfolio concept. Not affiliated with or endorsed by Apple Inc. Product names are used descriptively; product renders are original concept assets.',
                     ),
                   ],
                 ),
@@ -104,9 +133,11 @@ class _ProfileRow extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.onTap,
   });
   final IconData icon;
   final String title, subtitle;
+  final VoidCallback onTap;
   @override
   Widget build(BuildContext context) => Card(
     margin: const EdgeInsets.only(bottom: 10),
@@ -116,7 +147,36 @@ class _ProfileRow extends StatelessWidget {
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
       subtitle: Text(subtitle),
       trailing: const Icon(Icons.chevron_right_rounded),
-      onTap: () {},
+      onTap: onTap,
     ),
   );
 }
+
+void _showProfilePanel(
+  BuildContext context, {
+  required IconData icon,
+  required String title,
+  required String message,
+}) => showModalBottomSheet<void>(
+  context: context,
+  showDragHandle: true,
+  builder: (context) => SafeArea(
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: StoreColors.softRed,
+            child: Icon(icon, color: StoreColors.red),
+          ),
+          const SizedBox(height: 14),
+          Text(title, style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 8),
+          Text(message, textAlign: TextAlign.center),
+        ],
+      ),
+    ),
+  ),
+);

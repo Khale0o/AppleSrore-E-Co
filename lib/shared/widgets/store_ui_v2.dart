@@ -33,11 +33,15 @@ class StoreProductImageStage extends StatelessWidget {
     super.key,
     required this.product,
     this.heroTag,
+    this.imagePath,
+    this.price,
     this.padding = const EdgeInsets.all(12),
     this.background = const Color(0xFFF0F1F4),
   });
   final HomeProduct product;
   final String? heroTag;
+  final String? imagePath;
+  final int? price;
   final EdgeInsets padding;
   final Color background;
   @override
@@ -49,7 +53,7 @@ class StoreProductImageStage extends StatelessWidget {
     child: Padding(
       padding: padding,
       child: ProductImage(
-        path: product.assetPath,
+        path: imagePath ?? product.assetPath,
         label: product.name,
         heroTag: heroTag,
       ),
@@ -87,10 +91,12 @@ class StoreProductCard extends StatefulWidget {
     required this.saved,
     required this.onSaved,
     required this.onOpen,
+    this.imagePath,
     this.discount,
     this.originalPrice,
   });
   final HomeProduct product;
+  final String? imagePath;
   final bool saved;
   final VoidCallback onSaved;
   final VoidCallback onOpen;
@@ -120,7 +126,10 @@ class _StoreProductCardState extends State<StoreProductCard> {
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: StoreProductImageStage(product: widget.product),
+                      child: StoreProductImageStage(
+                        product: widget.product,
+                        imagePath: widget.imagePath,
+                      ),
                     ),
                     Positioned(
                       top: 0,
@@ -169,7 +178,7 @@ class _StoreProductCardState extends State<StoreProductCard> {
               Row(
                 children: [
                   Text(
-                    formatUsd(widget.product.basePrice),
+                    formatUsd(widget.price ?? widget.product.basePrice),
                     style: const TextStyle(
                       color: StoreColors.red,
                       fontWeight: FontWeight.w800,

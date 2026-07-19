@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/accessibility/reduced_motion_controller.dart';
 import '../../features/cart/presentation/cart_placeholder_page.dart';
 import '../../features/catalog/presentation/catalog_placeholder_page.dart';
+import '../../features/checkout/presentation/checkout_page.dart';
 import '../../features/home/presentation/home_placeholder_page.dart';
 import '../../features/product_configuration/presentation/product_configuration_placeholder_page.dart';
 import '../../features/product_details/presentation/product_details_placeholder_page.dart';
@@ -111,6 +112,11 @@ final appRouter = GoRouter(
           ),
         ),
       ],
+    ),
+    GoRoute(
+      name: AppRoutes.checkout,
+      path: AppRoutes.checkoutPath,
+      pageBuilder: (c, s) => _page(s, c, const CheckoutPage()),
     ),
   ],
   errorPageBuilder: (c, s) =>

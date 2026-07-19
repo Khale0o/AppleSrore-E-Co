@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/router/app_routes.dart';
 import '../../../app/theme/store_theme_v2.dart';
 import '../../../core/accessibility/reduced_motion_controller.dart';
 import '../../../shared/widgets/product_image.dart';
 import '../../../shared/widgets/store_ui_v2.dart';
 import '../../cart/presentation/cart_state.dart';
 import '../../home/presentation/home_products.dart';
+import '../../product_details/presentation/product_option_selectors.dart';
 import '../../product_details/presentation/product_variants.dart';
 
 class ProductConfigurationPlaceholderPage extends ConsumerStatefulWidget {
@@ -68,13 +70,11 @@ class _ConfigurationState
       orElse: () => variants.first,
     );
     final reduced = ref.watch(reducedMotionProvider);
-    final configurationIndex = product.configurations.indexOf(
-      selection.configuration,
-    );
     final price =
         product.basePrice +
         variant.priceAdjustment +
-        (configurationIndex < 0 ? 0 : configurationIndex * 100);
+        selectedOptionsPriceAdjustment(product, selection);
+    final selectedOptions = selectedOptionsForCart(product, selection);
     final imagePath = showingBack && variant.backImagePath != null
         ? variant.backImagePath!
         : (variant.frontImagePath ?? variant.imagePath);
@@ -97,7 +97,7 @@ class _ConfigurationState
               ),
             ),
             child: IconButton(
-              onPressed: () => context.goNamed('cart'),
+              onPressed: () => context.goNamed(AppRoutes.cart),
               icon: const Icon(Icons.shopping_bag_outlined),
             ),
           ),
@@ -122,28 +122,30 @@ class _ConfigurationState
                               SizedBox(
                                 key: productKey,
                                 height: 300,
-                                child: AnimatedSwitcher(
-                                  duration: Duration(
-                                    milliseconds: reduced ? 80 : 210,
-                                  ),
-                                  child: DecoratedBox(
-                                    key: ValueKey(
-                                      '${product.id}-${variant.id}-$showingBack',
+                                child: Hero(
+                                  tag: product.heroTag,
+                                  child: AnimatedSwitcher(
+                                    duration: Duration(
+                                      milliseconds: reduced ? 80 : 210,
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: Color.lerp(
-                                        Colors.white,
-                                        variant.swatch,
-                                        0.08,
+                                    child: DecoratedBox(
+                                      key: ValueKey(
+                                        '${product.id}-${variant.id}-$showingBack',
                                       ),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(26),
-                                      child: ProductImage(
-                                        path: imagePath,
-                                        label: product.name,
-                                        heroTag: product.heroTag,
+                                      decoration: BoxDecoration(
+                                        color: Color.lerp(
+                                          Colors.white,
+                                          variant.swatch,
+                                          0.08,
+                                        ),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(26),
+                                        child: ProductImage(
+                                          path: imagePath,
+                                          label: product.name,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -171,55 +173,42 @@ class _ConfigurationState
                                 ),
                               ],
                               const SizedBox(height: 24),
-                              Text(
-                                'Choose a finish',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineSmall,
-                              ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: variants
-                                    .map(
-                                      (item) => ChoiceChip(
-                                        selected: item.id == variant.id,
-                                        avatar: CircleAvatar(
-                                          backgroundColor: item.swatch,
-                                          radius: 8,
+                              if (variants.length > 1) ...[
+                                Text(
+                                  'Choose a finish',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.headlineSmall,
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: variants
+                                      .map(
+                                        (item) => ChoiceChip(
+                                          selected: item.id == variant.id,
+                                          avatar: CircleAvatar(
+                                            backgroundColor: item.swatch,
+                                            radius: 8,
+                                          ),
+                                          label: Text(item.displayName),
+                                          onSelected: (_) => controller
+                                              .setVariant(product, item.id),
                                         ),
-                                        label: Text(item.displayName),
-                                        onSelected: (_) => controller
-                                            .setVariant(product, item.id),
-                                      ),
-                                    )
-                                    .toList(),
+                                      )
+                                      .toList(),
+                                ),
+                                const SizedBox(height: 24),
+                              ],
+                              ProductOptionSelectors(
+                                product: product,
+                                selection: selection,
+                                onSelected: (groupId, valueId) => controller
+                                    .setOption(product, groupId, valueId),
                               ),
-                              const SizedBox(height: 24),
-                              Text(
-                                'Choose storage or size',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineSmall,
-                              ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: product.configurations
-                                    .map(
-                                      (value) => ChoiceChip(
-                                        selected:
-                                            value == selection.configuration,
-                                        label: Text(value),
-                                        onSelected: (_) => controller
-                                            .setConfiguration(product, value),
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-                              const SizedBox(height: 24),
+                              if (product.optionGroups.isNotEmpty)
+                                const SizedBox(height: 6),
                               Card(
                                 child: Padding(
                                   padding: const EdgeInsets.all(16),
@@ -246,7 +235,10 @@ class _ConfigurationState
                                               ).textTheme.titleMedium,
                                             ),
                                             Text(
-                                              '${variant.displayName} · ${selection.configuration}',
+                                              [
+                                                variant.displayName,
+                                                ...selectedOptions.values,
+                                              ].join(' · '),
                                             ),
                                           ],
                                         ),
@@ -284,7 +276,7 @@ class _ConfigurationState
                   onPressed: () => _add(
                     product: product,
                     variant: variant,
-                    configuration: selection.configuration,
+                    selectedOptions: selectedOptions,
                     imagePath: imagePath,
                     price: price,
                     reduced: reduced,
@@ -303,7 +295,7 @@ class _ConfigurationState
   Future<void> _add({
     required HomeProduct product,
     required ProductVariant variant,
-    required String configuration,
+    required Map<String, String> selectedOptions,
     required String imagePath,
     required int price,
     required bool reduced,
@@ -315,7 +307,7 @@ class _ConfigurationState
             productId: product.id,
             name: product.name,
             finish: variant.displayName,
-            storage: configuration,
+            selectedOptions: selectedOptions,
             unitPrice: price,
             variantId: variant.id,
             imagePath: imagePath,

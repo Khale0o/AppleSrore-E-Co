@@ -4,6 +4,7 @@ abstract final class AppRoutes {
       catalog = 'catalog',
       product = 'product',
       configure = 'configure',
+      checkout = 'checkout',
       cart = 'cart',
       saved = 'saved',
       profile = 'profile';
@@ -12,6 +13,7 @@ abstract final class AppRoutes {
       catalogPath = '/catalog',
       productPath = '/product/:productId',
       configurePath = '/product/:productId/configure',
+      checkoutPath = '/checkout',
       cartPath = '/cart',
       savedPath = '/saved',
       profilePath = '/profile';
