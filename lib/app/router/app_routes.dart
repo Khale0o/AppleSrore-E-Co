@@ -4,11 +4,15 @@ abstract final class AppRoutes {
       catalog = 'catalog',
       product = 'product',
       configure = 'configure',
-      cart = 'cart';
+      cart = 'cart',
+      saved = 'saved',
+      profile = 'profile';
   static const splashPath = '/',
       homePath = '/home',
       catalogPath = '/catalog',
       productPath = '/product/:productId',
       configurePath = '/product/:productId/configure',
-      cartPath = '/cart';
+      cartPath = '/cart',
+      savedPath = '/saved',
+      profilePath = '/profile';
 }

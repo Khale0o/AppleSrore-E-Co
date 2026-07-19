@@ -7,6 +7,9 @@ import '../../features/catalog/presentation/catalog_placeholder_page.dart';
 import '../../features/home/presentation/home_placeholder_page.dart';
 import '../../features/product_configuration/presentation/product_configuration_placeholder_page.dart';
 import '../../features/product_details/presentation/product_details_placeholder_page.dart';
+import '../../features/profile/presentation/profile_page.dart';
+import '../../features/saved/presentation/saved_page.dart';
+import '../../features/shell/presentation/store_shell.dart';
 import '../../features/splash/presentation/splash_placeholder_page.dart';
 import '../design_system/app_scaffold.dart';
 import '../design_system/app_text_button.dart';
@@ -33,15 +36,57 @@ final appRouter = GoRouter(
       path: AppRoutes.splashPath,
       pageBuilder: (c, s) => _page(s, c, const SplashPlaceholderPage()),
     ),
-    GoRoute(
-      name: AppRoutes.home,
-      path: AppRoutes.homePath,
-      pageBuilder: (c, s) => _page(s, c, const HomePlaceholderPage()),
-    ),
-    GoRoute(
-      name: AppRoutes.catalog,
-      path: AppRoutes.catalogPath,
-      pageBuilder: (c, s) => _page(s, c, const CatalogPlaceholderPage()),
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) =>
+          StoreShell(navigationShell: navigationShell),
+      branches: [
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              name: AppRoutes.home,
+              path: AppRoutes.homePath,
+              pageBuilder: (c, s) => _page(s, c, const HomePlaceholderPage()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              name: AppRoutes.catalog,
+              path: AppRoutes.catalogPath,
+              pageBuilder: (c, s) =>
+                  _page(s, c, const CatalogPlaceholderPage()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              name: AppRoutes.saved,
+              path: AppRoutes.savedPath,
+              pageBuilder: (c, s) => _page(s, c, const SavedPage()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              name: AppRoutes.cart,
+              path: AppRoutes.cartPath,
+              pageBuilder: (c, s) => _page(s, c, const CartPlaceholderPage()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              name: AppRoutes.profile,
+              path: AppRoutes.profilePath,
+              pageBuilder: (c, s) => _page(s, c, const ProfilePage()),
+            ),
+          ],
+        ),
+      ],
     ),
     GoRoute(
       name: AppRoutes.product,
@@ -66,11 +111,6 @@ final appRouter = GoRouter(
           ),
         ),
       ],
-    ),
-    GoRoute(
-      name: AppRoutes.cart,
-      path: AppRoutes.cartPath,
-      pageBuilder: (c, s) => _page(s, c, const CartPlaceholderPage()),
     ),
   ],
   errorPageBuilder: (c, s) =>

@@ -3,192 +3,250 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
+import '../../../app/theme/store_theme_v2.dart';
 import '../../../core/accessibility/reduced_motion_controller.dart';
 import '../../../shared/widgets/product_image.dart';
-import '../../cart/presentation/cart_badge.dart';
+import '../../../shared/widgets/store_ui_v2.dart';
+import '../../cart/presentation/cart_state.dart';
+import '../../saved/presentation/saved_state.dart';
 import 'home_products.dart';
 
 class HomePlaceholderPage extends ConsumerStatefulWidget {
   const HomePlaceholderPage({super.key});
-
   @override
   ConsumerState<HomePlaceholderPage> createState() => _HomeState();
 }
 
-class _HomeState extends ConsumerState<HomePlaceholderPage>
-    with SingleTickerProviderStateMixin {
-  late final ScrollController _scrollController;
-  late final AnimationController _entranceController;
-  double _scrollOffset = 0;
+class _HomeState extends ConsumerState<HomePlaceholderPage> {
+  late final PageController _heroController;
+  int selectedHero = 0;
+
+  static const _categoryIcons = [
+    Icons.phone_iphone_rounded,
+    Icons.laptop_mac_rounded,
+    Icons.tablet_mac_rounded,
+    Icons.watch_rounded,
+    Icons.headphones_rounded,
+    Icons.cable_rounded,
+  ];
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController()
-      ..addListener(() {
-        if (!mounted) return;
-        setState(() => _scrollOffset = _scrollController.offset);
-      });
-    _entranceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 620),
-    );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (ref.read(reducedMotionProvider)) {
-        _entranceController.value = 1;
-      } else {
-        _entranceController.forward();
-      }
-    });
+    _heroController = PageController(viewportFraction: 0.93);
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
-    _entranceController.dispose();
+    _heroController.dispose();
     super.dispose();
   }
 
+  void _open(HomeProduct product) => context.pushNamed(
+    AppRoutes.product,
+    pathParameters: {'productId': product.id},
+  );
+
+  void _toggleSaved(HomeProduct product) => ref
+      .read(savedProvider.notifier)
+      .toggle(
+        SavedItem(
+          productId: product.id,
+          variantId: 'default',
+          variantName: product.finish,
+          imagePath: product.assetPath,
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
-    final product = homeProducts.first;
-    final featured = homeProducts.where((item) => item.featured).toList();
     final reduced = ref.watch(reducedMotionProvider);
+    final saved = ref.watch(savedProvider);
+    final cartCount = ref.watch(cartCountProvider);
+    final heroProducts = [homeProducts[0], homeProducts[6], homeProducts[21]];
+    final hero = heroProducts[selectedHero];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF050609),
       body: SafeArea(
+        bottom: false,
         child: CustomScrollView(
-          controller: _scrollController,
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+              padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
               sliver: SliverToBoxAdapter(
                 child: Row(
                   children: [
-                    const Text(
-                      'APPLestore',
-                      style: TextStyle(color: Colors.white, letterSpacing: 2),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'AppleStore Concept',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            'Unofficial portfolio store',
+                            style: TextStyle(
+                              color: StoreColors.muted,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const Spacer(),
-                    const CartBadge(),
-                    Switch(
-                      key: const Key('reduced_motion_toggle'),
-                      value: reduced,
-                      onChanged: (_) => ref
-                          .read(reducedMotionControllerProvider.notifier)
-                          .toggleDevelopmentOverride(),
+                    IconButton(
+                      tooltip: 'Search',
+                      onPressed: () => context.goNamed(AppRoutes.catalog),
+                      icon: const Icon(Icons.search_rounded),
+                    ),
+                    IconButton(
+                      tooltip: 'Saved',
+                      onPressed: () => context.goNamed(AppRoutes.saved),
+                      icon: const Icon(Icons.favorite_border_rounded),
+                    ),
+                    IconButton(
+                      tooltip: 'Cart',
+                      onPressed: () => context.goNamed(AppRoutes.cart),
+                      icon: Badge(
+                        isLabelVisible: cartCount > 0,
+                        label: Text('$cartCount'),
+                        child: const Icon(Icons.shopping_bag_outlined),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
             SliverToBoxAdapter(
-              child: _Hero(
-                product: product,
-                scrollOffset: _scrollOffset,
-                reduced: reduced,
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: _SectionReveal(
-                animation: _entranceController,
-                index: 0,
-                reduced: reduced,
-                child: _CategoryRail(
-                  onTap: () => context.pushNamed(AppRoutes.catalog),
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: _SectionReveal(
-                animation: _entranceController,
-                index: 1,
-                reduced: reduced,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 42, 24, 16),
-                  child: Text(
-                    'Selected in context',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.headlineSmall?.copyWith(color: Colors.white),
-                  ),
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: _SectionReveal(
-                animation: _entranceController,
-                index: 2,
-                reduced: reduced,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      _WideProduct(product: featured[0]),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(child: _SmallProduct(product: featured[1])),
-                          const SizedBox(width: 14),
-                          Expanded(child: _SmallProduct(product: featured[2])),
-                        ],
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: reduced ? 80 : 260),
+                curve: Curves.easeOutCubic,
+                color: Color.lerp(const Color(0xFFFFE9EC), hero.accent, 0.12),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: 330,
+                      child: PageView.builder(
+                        controller: _heroController,
+                        itemCount: heroProducts.length,
+                        onPageChanged: (index) =>
+                            setState(() => selectedHero = index),
+                        itemBuilder: (context, index) => _CampaignHero(
+                          product: heroProducts[index],
+                          onOpen: () => _open(heroProducts[index]),
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        heroProducts.length,
+                        (index) => AnimatedContainer(
+                          duration: Duration(milliseconds: reduced ? 80 : 180),
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          width: selectedHero == index ? 24 : 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: selectedHero == index
+                                ? StoreColors.red
+                                : Colors.black12,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
             SliverToBoxAdapter(
-              child: _SectionReveal(
-                animation: _entranceController,
-                index: 3,
-                reduced: reduced,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 58, 24, 56),
-                  child: Container(
-                    height: 220,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF10151C), Color(0xFF030405)],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          left: 18,
-                          top: 20,
-                          width: 105,
-                          height: 175,
-                          child: ProductImage(
-                            path: homeProducts[0].assetPath,
-                            label: homeProducts[0].name,
-                          ),
-                        ),
-                        Positioned(
-                          right: 14,
-                          top: 42,
-                          width: 190,
-                          height: 120,
-                          child: ProductImage(
-                            path: homeProducts[6].assetPath,
-                            label: homeProducts[6].name,
-                          ),
-                        ),
-                        const Positioned(
-                          left: 22,
-                          bottom: 18,
-                          child: Text(
-                            'Everything, in concert.',
-                            style: TextStyle(color: Colors.white, fontSize: 20),
-                          ),
-                        ),
-                      ],
-                    ),
+              child: SizedBox(
+                height: 102,
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: ProductCategory.values.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 4),
+                  itemBuilder: (context, index) => CategoryItem(
+                    label: ProductCategory.values[index].label,
+                    icon: _categoryIcons[index],
+                    selected: false,
+                    onTap: () => context.goNamed(AppRoutes.catalog),
                   ),
                 ),
+              ),
+            ),
+            const SliverPadding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+              sliver: SliverToBoxAdapter(
+                child: StoreSectionHeader(
+                  title: 'Flash Deals',
+                  actionLabel: '01 : 42 : 18',
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 252,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: 4,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final product = homeProducts[index + 1];
+                    return SizedBox(
+                      width: 166,
+                      child: StoreProductCard(
+                        product: product,
+                        saved: saved.any(
+                          (item) => item.productId == product.id,
+                        ),
+                        onSaved: () => _toggleSaved(product),
+                        onOpen: () => _open(product),
+                        discount: 10 + index * 3,
+                        originalPrice: product.basePrice + 120,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 8),
+              sliver: SliverToBoxAdapter(
+                child: StoreSectionHeader(
+                  title: 'Best Selling',
+                  actionLabel: 'See All',
+                  onAction: () => context.goNamed(AppRoutes.catalog),
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisExtent: 250,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final product = homeProducts[[0, 6, 13, 18][index]];
+                  return StoreProductCard(
+                    product: product,
+                    saved: saved.any((item) => item.productId == product.id),
+                    onSaved: () => _toggleSaved(product),
+                    onOpen: () => _open(product),
+                  );
+                }, childCount: 4),
               ),
             ),
           ],
@@ -198,256 +256,69 @@ class _HomeState extends ConsumerState<HomePlaceholderPage>
   }
 }
 
-class _Hero extends StatelessWidget {
-  const _Hero({
-    required this.product,
-    required this.scrollOffset,
-    required this.reduced,
-  });
-
+class _CampaignHero extends StatelessWidget {
+  const _CampaignHero({required this.product, required this.onOpen});
   final HomeProduct product;
-  final double scrollOffset;
-  final bool reduced;
-
+  final VoidCallback onOpen;
   @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 510,
-    child: Stack(
-      children: [
-        const Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(0.55, -0.4),
-                radius: 1.1,
-                colors: [
-                  Color(0xFF203044),
-                  Color(0xFF080A0F),
-                  Color(0xFF030405),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          right: -25,
-          top: 40,
-          width: 270,
-          height: 340,
-          child: Transform.translate(
-            offset: Offset(0, reduced ? 0 : scrollOffset * 0.18),
-            child: ProductImage(
-              path: product.assetPath,
-              label: product.name,
-              heroTag: product.heroTag,
-            ),
-          ),
-        ),
-        Positioned(
-          left: 24,
-          right: 24,
-          bottom: 32,
-          child: Transform.translate(
-            offset: Offset(0, reduced ? 0 : scrollOffset * 0.06),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'NEW PERSPECTIVE',
-                  style: TextStyle(
-                    color: product.accent,
-                    letterSpacing: 2,
-                    fontSize: 11,
-                  ),
-                ),
-                Text(
-                  product.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 42,
-                    height: 0.95,
-                    fontWeight: FontWeight.w300,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  product.tagline,
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 18),
-                Row(
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: ColoredBox(
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 22, 12, 16),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 5,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    FilledButton(
-                      onPressed: () => context.pushNamed(
-                        AppRoutes.product,
-                        pathParameters: {'productId': product.id},
+                    const Text(
+                      'LIMITED CAMPAIGN',
+                      style: TextStyle(
+                        color: StoreColors.red,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.3,
                       ),
-                      child: const Text('Explore'),
                     ),
-                    const SizedBox(width: 12),
-                    TextButton(
-                      onPressed: () => context.pushNamed(
-                        AppRoutes.configure,
-                        pathParameters: {'productId': product.id},
-                      ),
-                      child: const Text('Configure'),
+                    const SizedBox(height: 8),
+                    Text(
+                      product.name,
+                      maxLines: 3,
+                      style: Theme.of(context).textTheme.displaySmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      product.tagline,
+                      maxLines: 2,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: onOpen,
+                      child: const Text('Shop now'),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _SectionReveal extends StatelessWidget {
-  const _SectionReveal({
-    required this.animation,
-    required this.index,
-    required this.reduced,
-    required this.child,
-  });
-
-  final Animation<double> animation;
-  final int index;
-  final bool reduced;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    if (reduced) return child;
-    return AnimatedBuilder(
-      animation: animation,
-      child: child,
-      builder: (context, child) {
-        final start = index * 0.12;
-        final value = CurvedAnimation(
-          parent: animation,
-          curve: Interval(
-            start,
-            (start + 0.58).clamp(0, 1),
-            curve: Curves.easeOutCubic,
-          ),
-        ).value;
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 18 * (1 - value)),
-            child: child,
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _CategoryRail extends StatelessWidget {
-  const _CategoryRail({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-    child: Row(
-      children: ProductCategory.values
-          .map(
-            (category) => Padding(
-              padding: const EdgeInsets.only(right: 24),
-              child: TextButton(
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  foregroundColor: category == ProductCategory.iphone
-                      ? Colors.white
-                      : Colors.white54,
-                ),
-                onPressed: onTap,
-                child: Text(
-                  category.label,
-                  style: TextStyle(
-                    decoration: category == ProductCategory.iphone
-                        ? TextDecoration.underline
-                        : null,
-                    decorationColor: const Color(0xFF9EDDF8),
+              ),
+              Expanded(
+                flex: 6,
+                child: Hero(
+                  tag: product.heroTag,
+                  child: ProductImage(
+                    path: product.assetPath,
+                    label: product.name,
                   ),
                 ),
               ),
-            ),
-          )
-          .toList(),
-    ),
-  );
-}
-
-class _WideProduct extends StatelessWidget {
-  const _WideProduct({required this.product});
-
-  final HomeProduct product;
-
-  @override
-  Widget build(BuildContext context) =>
-      _EditorialProduct(product: product, height: 275, wide: true);
-}
-
-class _SmallProduct extends StatelessWidget {
-  const _SmallProduct({required this.product});
-
-  final HomeProduct product;
-
-  @override
-  Widget build(BuildContext context) =>
-      _EditorialProduct(product: product, height: 215);
-}
-
-class _EditorialProduct extends StatelessWidget {
-  const _EditorialProduct({
-    required this.product,
-    required this.height,
-    this.wide = false,
-  });
-
-  final HomeProduct product;
-  final double height;
-  final bool wide;
-
-  @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: () => context.pushNamed(
-      AppRoutes.product,
-      pathParameters: {'productId': product.id},
-    ),
-    child: Container(
-      height: height,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: wide ? const Color(0xFF121820) : const Color(0xFF0B0D12),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: ProductImage(path: product.assetPath, label: product.name),
+            ],
           ),
-          Text(
-            product.category.label.toUpperCase(),
-            style: TextStyle(
-              color: product.accent,
-              fontSize: 10,
-              letterSpacing: 1.3,
-            ),
-          ),
-          Text(
-            product.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.white, fontSize: wide ? 22 : 15),
-          ),
-        ],
+        ),
       ),
     ),
   );

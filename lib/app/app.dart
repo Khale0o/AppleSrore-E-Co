@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'router/app_router.dart';
-import 'theme/app_theme.dart';
+import 'theme/store_theme_v2.dart';
 
 class AppleStoreApp extends StatelessWidget {
   const AppleStoreApp({super.key});
@@ -8,9 +8,9 @@ class AppleStoreApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Aether Store',
+      title: 'AppleStore Concept',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
+      theme: StoreThemeV2.light,
       routerConfig: appRouter,
     );
   }

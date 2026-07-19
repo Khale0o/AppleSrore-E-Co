@@ -7,17 +7,22 @@ class CartItem {
     required this.finish,
     required this.storage,
     required this.unitPrice,
+    this.variantId = 'default',
+    this.imagePath = '',
     this.quantity = 1,
   });
   final String productId, name, finish, storage;
+  final String variantId, imagePath;
   final int unitPrice, quantity;
-  String get key => '$productId|$finish|$storage';
+  String get key => '$productId|$variantId|$finish|$storage';
   CartItem copyWith({int? quantity}) => CartItem(
     productId: productId,
     name: name,
     finish: finish,
     storage: storage,
     unitPrice: unitPrice,
+    variantId: variantId,
+    imagePath: imagePath,
     quantity: quantity ?? this.quantity,
   );
 }
