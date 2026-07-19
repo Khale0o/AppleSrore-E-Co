@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../app/router/app_routes.dart';
+import '../../../shared/widgets/product_image.dart';
 import '../../home/presentation/home_products.dart';
 
 class CatalogPlaceholderPage extends StatefulWidget {
   const CatalogPlaceholderPage({super.key});
+
   @override
   State<CatalogPlaceholderPage> createState() => _CatalogState();
 }
@@ -13,111 +16,150 @@ class _CatalogState extends State<CatalogPlaceholderPage> {
   ProductCategory? category;
   String query = '';
   int sort = 0;
+
   @override
   Widget build(BuildContext context) {
-    var products = homeProducts
+    final products = homeProducts
         .where(
-          (p) =>
-              (category == null || p.category == category) &&
-              p.name.toLowerCase().contains(query.toLowerCase()),
+          (product) =>
+              (category == null || product.category == category) &&
+              product.name.toLowerCase().contains(query.toLowerCase()),
         )
         .toList();
-    if (sort == 1) products.sort((a, b) => a.basePrice.compareTo(b.basePrice));
-    if (sort == 2) products.sort((a, b) => b.basePrice.compareTo(a.basePrice));
+
+    if (sort == 1) {
+      products.sort((a, b) => a.basePrice.compareTo(b.basePrice));
+    }
+    if (sort == 2) {
+      products.sort((a, b) => b.basePrice.compareTo(a.basePrice));
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFF07090D),
+      backgroundColor: const Color(0xFF050609),
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'COLLECTION',
-                    style: TextStyle(color: Colors.white, letterSpacing: 2),
-                  ),
-                  const Text(
-                    'The connected edit.',
-                    style: TextStyle(color: Colors.white, fontSize: 30),
-                  ),
-                  TextField(
-                    key: const Key('catalog_search'),
-                    onChanged: (v) => setState(() => query = v),
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
-                      hintText: 'Search products',
-                    ),
-                  ),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        TextButton(
-                          onPressed: () => setState(() => category = null),
-                          child: const Text('All'),
-                        ),
-                        ...ProductCategory.values.map(
-                          (c) => FilterChip(
-                            label: Text(c.label),
-                            selected: category == c,
-                            onSelected: (_) => setState(() => category = c),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        '${products.length} products',
-                        style: const TextStyle(color: Colors.white70),
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'COLLECTION',
+                      style: TextStyle(
+                        color: Color(0xFF9EDDF8),
+                        letterSpacing: 2,
+                        fontSize: 11,
                       ),
-                      const Spacer(),
-                      DropdownButton<int>(
-                        value: sort,
-                        onChanged: (v) => setState(() => sort = v!),
-                        items: const [
-                          DropdownMenuItem(value: 0, child: Text('Featured')),
-                          DropdownMenuItem(value: 1, child: Text('Price: low')),
-                          DropdownMenuItem(
-                            value: 2,
-                            child: Text('Price: high'),
+                    ),
+                    const Text(
+                      'Find your frame.',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
+                    TextField(
+                      key: const Key('catalog_search'),
+                      onChanged: (value) => setState(() => query = value),
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        hintText: 'Search the collection',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          TextButton(
+                            onPressed: () => setState(() => category = null),
+                            child: Text(
+                              'All',
+                              style: TextStyle(
+                                decoration: category == null
+                                    ? TextDecoration.underline
+                                    : null,
+                              ),
+                            ),
+                          ),
+                          ...ProductCategory.values.map(
+                            (item) => Padding(
+                              padding: const EdgeInsets.only(left: 20),
+                              child: TextButton(
+                                onPressed: () =>
+                                    setState(() => category = item),
+                                child: Text(
+                                  item.label,
+                                  style: TextStyle(
+                                    color: category == item
+                                        ? Colors.white
+                                        : Colors.white54,
+                                    decoration: category == item
+                                        ? TextDecoration.underline
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          '${products.length} products',
+                          style: const TextStyle(color: Colors.white54),
+                        ),
+                        const Spacer(),
+                        DropdownButton<int>(
+                          value: sort,
+                          onChanged: (value) => setState(() => sort = value!),
+                          items: const [
+                            DropdownMenuItem(value: 0, child: Text('Featured')),
+                            DropdownMenuItem(
+                              value: 1,
+                              child: Text('Price: low'),
+                            ),
+                            DropdownMenuItem(
+                              value: 2,
+                              child: Text('Price: high'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-            Expanded(
-              child: products.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No products found.',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    )
-                  : GridView.builder(
-                      padding: const EdgeInsets.all(24),
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 320,
-                            mainAxisExtent: 220,
-                            crossAxisSpacing: 14,
-                            mainAxisSpacing: 14,
-                          ),
-                      itemCount: products.length,
-                      itemBuilder: (c, i) => _Tile(p: products[i]),
+            if (products.isEmpty)
+              const SliverFillRemaining(
+                child: Center(
+                  child: Text(
+                    'No products found.',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 60),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: _CatalogTile(
+                      product: products[index],
+                      wide: index == 0,
                     ),
-            ),
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'Unofficial portfolio concept. Product names and imagery belong to their respective owners.',
-                style: TextStyle(color: Colors.white54, fontSize: 11),
+                  ),
+                  childCount: products.length,
+                ),
               ),
             ),
           ],
@@ -127,48 +169,65 @@ class _CatalogState extends State<CatalogPlaceholderPage> {
   }
 }
 
-class _Tile extends StatelessWidget {
-  const _Tile({required this.p});
-  final HomeProduct p;
+class _CatalogTile extends StatelessWidget {
+  const _CatalogTile({required this.product, required this.wide});
+
+  final HomeProduct product;
+  final bool wide;
+
   @override
-  Widget build(BuildContext c) => InkWell(
-    onTap: () =>
-        c.pushNamed(AppRoutes.product, pathParameters: {'productId': p.id}),
+  Widget build(BuildContext context) => InkWell(
+    onTap: () => context.pushNamed(
+      AppRoutes.product,
+      pathParameters: {'productId': product.id},
+    ),
     child: Container(
-      padding: const EdgeInsets.all(18),
+      height: wide ? 265 : 170,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: p.end,
-        borderRadius: BorderRadius.circular(24),
+        color: wide ? const Color(0xFF141A22) : const Color(0xFF0D0F14),
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
           Expanded(
-            child: Hero(
-              tag: p.heroTag,
-              child: Image.asset(
-                p.assetPath,
-                errorBuilder: (context, error, stackTrace) => const Center(
-                  child: Icon(
-                    Icons.image_outlined,
-                    color: Colors.white38,
-                    size: 55,
-                  ),
-                ),
-              ),
+            flex: wide ? 6 : 4,
+            child: ProductImage(
+              path: product.assetPath,
+              label: product.name,
+              heroTag: product.heroTag,
             ),
           ),
-          Text(
-            p.category.label.toUpperCase(),
-            style: TextStyle(color: p.accent, fontSize: 11),
-          ),
-          Text(
-            p.name,
-            style: const TextStyle(color: Colors.white, fontSize: 17),
-          ),
-          Text(
-            p.price,
-            style: const TextStyle(color: Colors.white70, fontSize: 11),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.category.label.toUpperCase(),
+                  style: TextStyle(
+                    color: product.accent,
+                    fontSize: 10,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                Text(
+                  product.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: wide ? 24 : 17,
+                  ),
+                ),
+                Text(
+                  product.price,
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+              ],
+            ),
           ),
         ],
       ),

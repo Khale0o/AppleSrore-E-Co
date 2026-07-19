@@ -62,7 +62,17 @@ HomeProduct _p(
   tagline: 'Designed for the moments that matter.',
   description:
       'A portfolio reference configuration. Pricing is demo/reference only.',
-  assetPath: 'assets/products/${category.name}/$id.webp',
+  assetPath: category == ProductCategory.iphone
+      ? 'assets/products/iphone/iphone-family.png'
+      : category == ProductCategory.mac
+      ? 'assets/products/mac/mac-family.png'
+      : category == ProductCategory.ipad
+      ? 'assets/products/ipad/ipad-family.png'
+      : category == ProductCategory.watch
+      ? 'assets/products/watch/watch-family.png'
+      : category == ProductCategory.airpods
+      ? 'assets/products/airpods/airpods-family.png'
+      : 'assets/products/accessories/accessories-family.png',
   finishes: const ['Silver', 'Midnight', 'Blue'],
   configurations: category == ProductCategory.accessories
       ? const ['Standard']
